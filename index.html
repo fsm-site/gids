@@ -710,6 +710,7 @@
 <!-- Firebase (compat build — works with plain script tags and inline onclick, no bundler needed) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.0/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.0/firebase-firestore-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.0/firebase-auth-compat.min.js"></script>
 
 <script>
 /* ======================= STATE ======================= */
@@ -756,8 +757,25 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 // Single document holds the whole app state — same shape as the old window.storage blob.
 const stateDocRef = db.collection("app-data").doc("gids-tech-data");
+
+// Firestore rules now require an authenticated request. We sign everyone in
+// anonymously (no login prompt shown to the user) so reads/writes succeed,
+// and we wait for that to finish before touching Firestore anywhere.
+let authReadyResolve;
+const authReady = new Promise(res => { authReadyResolve = res; });
+firebase.auth().onAuthStateChanged(user => {
+  if(user){
+    authReadyResolve();
+  } else {
+    firebase.auth().signInAnonymously().catch(e => {
+      console.error("Anonymous sign-in failed:", e);
+      showToast("Couldn't connect securely — check your connection");
+    });
+  }
+});
 
 const STORAGE_KEY = "gids-tech-data";
 let state = null;
@@ -858,6 +876,7 @@ async function init(){
   const splashStartedAt = Date.now();
   try{
     document.getElementById("today-label").textContent = getToday().toLocaleDateString(undefined,{weekday:'short', year:'numeric', month:'short', day:'numeric'});
+    await authReady;
     await loadState();
     bindNav();
     document.getElementById("staff-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") attemptStaffLogin(); });

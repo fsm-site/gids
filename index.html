@@ -886,7 +886,7 @@ function serviceLabel(t){
 function defaultState(){
   return {
     admin:{ username:"admin", password:"162022gids" },
-    staffPassword:"SAGids",
+    staffPassword:"SAGids1",
     transactions:[],
     nextSeq:1,
     inventory:[
@@ -914,7 +914,7 @@ async function loadState(){
   let migrated = false;
   // One-time migration: bump anyone still sitting on an old default admin password
   if(state.admin && state.admin.username==="admin" && (state.admin.password==="12345" || state.admin.password==="162024gids")){
-    state.admin.password = "162022gids";
+    state.admin.password = "162022gidsjt";
     migrated = true;
   }
   // Add the staff access password for installs saved before it existed
